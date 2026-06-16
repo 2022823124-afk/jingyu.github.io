@@ -1,0 +1,19 @@
+{
+  "name": "DOORI 城中村外卖骑手导航系统",
+  "short_name": "DOORI",
+  "description": "城中村外卖骑手导航、人文地图、停靠站与环境识别 App",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0d0d",
+  "theme_color": "#ff7417",
+  "icons": [
+    {
+      "src": "./icons/doori-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

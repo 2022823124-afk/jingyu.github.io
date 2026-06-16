@@ -1843,6 +1843,13 @@ p {
   box-shadow: 0 18px 34px rgba(255, 116, 23, 0.26);
 }
 
+.install-hint {
+  margin-top: -16px;
+  color: #8b8780;
+  font-size: 11px;
+  text-align: center;
+}
+
 @media (max-width: 640px) {
   .app-shell {
     padding: 0;

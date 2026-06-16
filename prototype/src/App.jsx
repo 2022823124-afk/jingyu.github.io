@@ -962,6 +962,7 @@ function SplashScreen({ onEnter }) {
         <Navigation size={18} />
         进入 DOORI
       </button>
+      <small className="install-hint">手机浏览器菜单中选择“添加到主屏幕”即可安装</small>
     </section>
   );
 }
