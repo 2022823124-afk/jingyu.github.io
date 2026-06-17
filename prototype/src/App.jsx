@@ -14,8 +14,10 @@ import {
   CircleUserRound,
   Compass,
   Crosshair,
+  HelpCircle,
   ImagePlus,
   Layers3,
+  LogOut,
   Map,
   MapPin,
   Navigation,
@@ -26,6 +28,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  TrendingUp,
   Upload,
   Wifi,
   X,
@@ -1041,8 +1044,22 @@ function StationScreen({ connectedStation, setConnectedStation }) {
 }
 
 function ProfileScreen() {
+  const [profileNotice, setProfileNotice] = useState("");
+  const profileActions = [
+    { label: "消息通知", icon: Bell, badge: "3", message: "已打开消息通知" },
+    { label: "隐私设置", icon: ShieldCheck, message: "隐私设置正在整理中" },
+    { label: "帮助与反馈", icon: HelpCircle, message: "已进入帮助与反馈" },
+    { label: "贡献排行榜", icon: TrendingUp, message: "贡献排行榜暂未开放" },
+  ];
+
+  function handleProfileAction(message) {
+    setProfileNotice(message);
+    window.setTimeout(() => setProfileNotice(""), 1400);
+  }
+
   return (
     <div className="screen-content">
+      {profileNotice ? <div className="profile-toast">{profileNotice}</div> : null}
       <AppHeader title="骑手中心" subtitle="金龙城中村配送区" />
       <section className="profile-card">
         <div className="avatar" />
@@ -1079,18 +1096,34 @@ function ProfileScreen() {
       </section>
 
       <section className="weekly-card">
-        <h2>本周贡献趋势</h2>
+        <h2><TrendingUp size={16} />本周贡献趋势</h2>
         <div className="bars">
-          {[18, 20, 14, 28, 22, 52, 31].map((height, index) => (
-            <span key={index} style={{ height: `${height}px` }} />
+          {["一", "二", "三", "四", "五", "六", "日"].map((day, index) => (
+            <span key={day} className={index === 5 ? "active" : ""}>
+              <i />
+              <em>{day}</em>
+            </span>
           ))}
         </div>
       </section>
 
       <section className="settings-list">
-        <button type="button"><Bell size={16} />消息通知<ChevronRight size={16} /></button>
-        <button type="button"><ShieldCheck size={16} />隐私设置<ChevronRight size={16} /></button>
+        {profileActions.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button key={item.label} type="button" onClick={() => handleProfileAction(item.message)}>
+              <Icon size={22} />
+              <span>{item.label}</span>
+              {item.badge ? <strong>{item.badge}</strong> : null}
+              <ChevronRight size={18} />
+            </button>
+          );
+        })}
       </section>
+      <button className="logout-button" type="button" onClick={() => handleProfileAction("当前为演示账号，已模拟退出")}>
+        <LogOut size={18} />
+        退出登录
+      </button>
     </div>
   );
 }
