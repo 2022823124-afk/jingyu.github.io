@@ -216,6 +216,84 @@ function cx(...values) {
   return values.filter(Boolean).join(" ");
 }
 
+function formatUploadTime(createdAt) {
+  if (!createdAt) return "刚刚";
+  const minutes = Math.max(0, Math.floor((Date.now() - createdAt) / 60000));
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes}分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}小时前`;
+  return `${Math.floor(hours / 24)}天前`;
+}
+
+function distanceBetweenSignatures(a, b) {
+  if (!a || !b) return Number.POSITIVE_INFINITY;
+  return Math.sqrt(
+    (a.r - b.r) ** 2 +
+      (a.g - b.g) ** 2 +
+      (a.b - b.b) ** 2 +
+      (a.contrast - b.contrast) ** 2,
+  );
+}
+
+function imageToSignature(source) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const size = 32;
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) {
+        resolve(null);
+        return;
+      }
+      context.drawImage(image, 0, 0, size, size);
+      const { data } = context.getImageData(0, 0, size, size);
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let contrast = 0;
+      const pixels = data.length / 4;
+      for (let index = 0; index < data.length; index += 4) {
+        r += data[index];
+        g += data[index + 1];
+        b += data[index + 2];
+      }
+      r /= pixels;
+      g /= pixels;
+      b /= pixels;
+      const luminance = (r + g + b) / 3;
+      for (let index = 0; index < data.length; index += 4) {
+        const current = (data[index] + data[index + 1] + data[index + 2]) / 3;
+        contrast += Math.abs(current - luminance);
+      }
+      resolve({
+        r: Math.round(r),
+        g: Math.round(g),
+        b: Math.round(b),
+        contrast: Math.round(contrast / pixels),
+      });
+    };
+    image.onerror = () => resolve(null);
+    image.src = source;
+  });
+}
+
+function normalizeUploadLibrary(items) {
+  if (!Array.isArray(items)) return initialUploads;
+  return items
+    .filter((item) => item?.image)
+    .map((item, index) => ({
+      ...item,
+      id: item.id || `upload-saved-${index}`,
+      createdAt: item.createdAt || Date.now(),
+      state: item.state || "审核中",
+    }));
+}
+
 function AppHeader({ title, subtitle, onScanOrder }) {
   return (
     <header className="app-header">
@@ -658,17 +736,19 @@ function InfoLine({ icon: Icon, label, value }) {
   );
 }
 
-function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrder }) {
+function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrder, uploads }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [cameraError, setCameraError] = useState("");
   const [cameraReady, setCameraReady] = useState(false);
   const [capturedImage, setCapturedImage] = useState("");
   const [selectedCandidateId, setSelectedCandidateId] = useState("c1");
+  const [recognitionMatches, setRecognitionMatches] = useState(recognitionCandidates);
   const scanning = scanState === "scanning";
   const result = scanState === "result";
   const selectedCandidate =
-    recognitionCandidates.find((candidate) => candidate.id === selectedCandidateId) ||
+    recognitionMatches.find((candidate) => candidate.id === selectedCandidateId) ||
+    recognitionMatches[0] ||
     recognitionCandidates[0];
 
   useEffect(() => {
@@ -703,11 +783,32 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
     }
   }
 
-  function runRecognition(imageUrl) {
+  async function runRecognition(imageUrl) {
     setCapturedImage(imageUrl);
-    setSelectedCandidateId("c1");
     setScanState("scanning");
-    window.setTimeout(() => setScanState("result"), 1050);
+    const signature = await imageToSignature(imageUrl);
+    const libraryMatches = uploads
+      .filter((item) => item.state === "已收录" && item.signature)
+      .map((item) => {
+        const distance = distanceBetweenSignatures(signature, item.signature);
+        const confidence = Math.max(42, Math.min(96, Math.round(96 - distance / 3.2)));
+        return {
+          id: item.id,
+          title: item.title,
+          address: item.location || "石牌村照片库",
+          distance: "图库匹配",
+          confidence,
+          hint: `已匹配你上传并收录的${item.type}照片，可作为环境识别参照。`,
+          uploader: "本地照片库",
+          sourceImage: item.image,
+        };
+      })
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 3);
+    const nextMatches = libraryMatches.length ? libraryMatches : recognitionCandidates;
+    setRecognitionMatches(nextMatches);
+    setSelectedCandidateId(nextMatches[0]?.id || "c1");
+    window.setTimeout(() => setScanState("result"), 650);
   }
 
   function captureFrame() {
@@ -727,7 +828,9 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
   function handleEnvironmentUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    runRecognition(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => runRecognition(String(reader.result));
+    reader.readAsDataURL(file);
     event.target.value = "";
   }
 
@@ -761,7 +864,7 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
             <BadgeCheck size={25} />
             <div>
               <strong>{selectedCandidate.title}</strong>
-              <span>{selectedCandidate.address} · 距您 {selectedCandidate.distance} · 骑手_阿明 上传</span>
+              <span>{selectedCandidate.address} · {selectedCandidate.distance} · {selectedCandidate.uploader || "骑手_阿明"} 上传</span>
               <small>{selectedCandidate.confidence}%可信度 · {selectedCandidate.confidence >= 80 ? "可定位" : "建议复核"}</small>
             </div>
             <strong className="confidence">{selectedCandidate.confidence}%</strong>
@@ -796,7 +899,7 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
       {result ? (
         <section className="panel result-panel">
           <div className="candidate-tabs">
-            {recognitionCandidates.map((candidate, index) => (
+            {recognitionMatches.map((candidate, index) => (
               <button
                 key={candidate.id}
                 className={cx(candidate.id === selectedCandidateId && "active")}
@@ -850,6 +953,7 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
 function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUploadType }) {
   const [previewName, setPreviewName] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
+  const [previewSignature, setPreviewSignature] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [selectedUpload, setSelectedUpload] = useState(null);
 
@@ -859,12 +963,14 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
     setUploads((items) => [
       {
         id: `upload-${Date.now()}`,
+        createdAt: Date.now(),
         title: previewName || `${type?.label || "环境"}照片`,
         type: type?.label || "环境照片",
         typeId: selectedUploadType,
         time: "刚刚",
         state: "审核中",
         image: previewUrl,
+        signature: previewSignature,
         location: "石牌村附近，等待审核确认精确位置",
       },
       ...items,
@@ -874,6 +980,7 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
 
   function resetPhoto() {
     setPreviewUrl("");
+    setPreviewSignature(null);
     setPreviewName("");
     setSubmitted(false);
   }
@@ -882,8 +989,10 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewUrl(String(reader.result));
+    reader.onload = async () => {
+      const imageData = String(reader.result);
+      setPreviewUrl(imageData);
+      setPreviewSignature(await imageToSignature(imageData));
       setPreviewName(file.name.replace(/\.[^.]+$/, ""));
       setSubmitted(false);
     };
@@ -951,8 +1060,21 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
       ) : null}
 
       <StatsCard uploads={uploads} />
-      <UploadList uploads={uploads} onOpen={setSelectedUpload} />
-      {selectedUpload ? <UploadDetailModal item={selectedUpload} onClose={() => setSelectedUpload(null)} /> : null}
+      <UploadList
+        uploads={uploads}
+        onOpen={setSelectedUpload}
+        onDelete={(item) => setUploads((items) => items.filter((current) => current.id !== item.id))}
+      />
+      {selectedUpload ? (
+        <UploadDetailModal
+          item={selectedUpload}
+          onClose={() => setSelectedUpload(null)}
+          onDelete={(item) => {
+            setUploads((items) => items.filter((current) => current.id !== item.id));
+            setSelectedUpload(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -971,7 +1093,7 @@ function StatsCard({ uploads }) {
   );
 }
 
-function UploadList({ uploads, onOpen }) {
+function UploadList({ uploads, onOpen, onDelete }) {
   return (
     <section className="recent">
       <div className="section-head">
@@ -979,14 +1101,21 @@ function UploadList({ uploads, onOpen }) {
         <button type="button" onClick={() => uploads[0] && onOpen(uploads[0])}>查看全部</button>
       </div>
       {uploads.length ? uploads.map((item) => (
-        <button className="upload-row" key={item.id || `${item.title}-${item.time}`} type="button" onClick={() => onOpen(item)}>
-          <span className="small-thumb" style={item.image ? { backgroundImage: `url(${item.image})` } : undefined} />
-          <div>
-            <strong>{item.title}</strong>
-            <small>{item.type} · {item.time}</small>
-          </div>
-          <em className={item.state === "审核中" ? "pending" : "ok"}>{item.state}</em>
-        </button>
+        <div className="upload-row" key={item.id || `${item.title}-${item.time}`}>
+          <button className="upload-row-main" type="button" onClick={() => onOpen(item)}>
+            <span className="small-thumb" style={item.image ? { backgroundImage: `url(${item.image})` } : undefined} />
+            <div>
+              <strong>{item.title}</strong>
+              <small>{item.type} · {formatUploadTime(item.createdAt)}</small>
+            </div>
+            <em className={item.state === "审核中" ? "pending" : "ok"}>{item.state}</em>
+          </button>
+          {item.state === "审核中" ? (
+            <button className="delete-upload" type="button" onClick={() => onDelete(item)}>
+              删除
+            </button>
+          ) : null}
+        </div>
       )) : (
         <div className="empty-library">
           <ImagePlus size={22} />
@@ -998,7 +1127,7 @@ function UploadList({ uploads, onOpen }) {
   );
 }
 
-function UploadDetailModal({ item, onClose }) {
+function UploadDetailModal({ item, onClose, onDelete }) {
   return (
     <div className="upload-modal" role="dialog" aria-modal="true" aria-label="照片详情">
       <div className="upload-modal-card">
@@ -1010,6 +1139,11 @@ function UploadDetailModal({ item, onClose }) {
           <strong>{item.title}</strong>
           <span>{item.type} · {item.state}</span>
           <p>{item.location || "等待审核确认位置"}</p>
+          {item.state === "审核中" ? (
+            <button className="delete-detail-button" type="button" onClick={() => onDelete(item)}>
+              删除这张审核中的照片
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -1236,7 +1370,7 @@ export function App() {
   const [uploads, setUploads] = useState(() => {
     try {
       const savedUploads = window.localStorage.getItem("doori-photo-library");
-      return savedUploads ? JSON.parse(savedUploads) : initialUploads;
+      return savedUploads ? normalizeUploadLibrary(JSON.parse(savedUploads)) : initialUploads;
     } catch {
       return initialUploads;
     }
@@ -1252,6 +1386,21 @@ export function App() {
       // Large image data can exceed browser storage; keep the in-memory library usable.
     }
   }, [uploads]);
+
+  useEffect(() => {
+    const approveReadyUploads = () => {
+      setUploads((items) =>
+        items.map((item) =>
+          item.state === "审核中" && item.createdAt && Date.now() - item.createdAt >= 10 * 60 * 1000
+            ? { ...item, state: "已收录", reviewedAt: Date.now() }
+            : item,
+        ),
+      );
+    };
+    approveReadyUploads();
+    const timer = window.setInterval(approveReadyUploads, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   function scanOrderAddress(event) {
     const file = event.target.files?.[0];
@@ -1306,6 +1455,7 @@ export function App() {
             setActive={setActive}
             setLostMode={setLostMode}
             onScanOrder={scanOrderAddress}
+            uploads={uploads}
           />
         ) : null}
         {active === "upload" ? (
