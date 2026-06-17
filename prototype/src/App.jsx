@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -12,7 +12,6 @@ import {
   CircleUserRound,
   Compass,
   Crosshair,
-  ExternalLink,
   ImagePlus,
   Layers3,
   Map,
@@ -30,7 +29,7 @@ import {
   Zap,
 } from "lucide-react";
 
-const destination = {
+const defaultDestination = {
   name: "金龙巷18号",
   detail: "从永兴茶餐店旁小巷进入，楼道在左手边第一个铁门",
   eta: "约8分钟",
@@ -140,14 +139,43 @@ const uploadTypes = [
 ];
 
 const currentLocation = [23.12872, 113.33966];
-const destinationLocation = [destination.lat, destination.lng];
-const fallbackRoute = [
-  currentLocation,
-  [23.12895, 113.33976],
-  [23.12918, 113.33988],
-  [23.12934, 113.34008],
-  destinationLocation,
+const searchPresets = [
+  defaultDestination,
+  {
+    name: "石牌村牌坊",
+    detail: "石牌东路入口附近，适合作为进村定位点",
+    eta: "约6分钟",
+    distance: "310m",
+    lat: 23.12896,
+    lng: 113.33792,
+  },
+  {
+    name: "永兴茶餐店",
+    detail: "金龙巷口附近，店招明显，可作为环境识别参照",
+    eta: "约4分钟",
+    distance: "220m",
+    lat: 23.12912,
+    lng: 113.34002,
+  },
+  {
+    name: "金龙市场停靠站",
+    detail: "停靠站 S1，支持蓝牙辅助定位与充电",
+    eta: "约3分钟",
+    distance: "120m",
+    lat: 23.12938,
+    lng: 113.34038,
+  },
 ];
+
+function createFallbackRoute(target) {
+  return [
+    currentLocation,
+    [23.12895, 113.33976],
+    [23.12918, 113.33988],
+    [23.12934, 113.34008],
+    [target.lat, target.lng],
+  ];
+}
 
 const landmarkCoordinates = [
   [23.1295, 113.34025],
@@ -226,7 +254,15 @@ function BottomNav({ active, setActive }) {
   );
 }
 
-function MiniMap({ lostMode, selectedPoi, setSelectedPoi, connectedStation, onToggleLost }) {
+function MiniMap({
+  lostMode,
+  selectedPoi,
+  setSelectedPoi,
+  connectedStation,
+  onToggleLost,
+  destinationData,
+  onRouteUpdate,
+}) {
   const mapNodeRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const overlayLayerRef = useRef(null);
@@ -259,8 +295,11 @@ function MiniMap({ lostMode, selectedPoi, setSelectedPoi, connectedStation, onTo
 
   useEffect(() => {
     const routeLayer = routeLayerRef.current;
+    const map = mapInstanceRef.current;
     if (!routeLayer) return;
     routeLayer.clearLayers();
+    const destinationLocation = [destinationData.lat, destinationData.lng];
+    const fallbackRoute = createFallbackRoute(destinationData);
 
     const drawRoute = (coords) => {
       L.polyline(coords, {
@@ -270,25 +309,35 @@ function MiniMap({ lostMode, selectedPoi, setSelectedPoi, connectedStation, onTo
         dashArray: "12 10",
         lineCap: "round",
       }).addTo(routeLayer);
+      if (map) {
+        map.fitBounds(L.latLngBounds(coords), { padding: [54, 54], maxZoom: 18 });
+      }
     };
 
     drawRoute(fallbackRoute);
+    onRouteUpdate?.({ eta: destinationData.eta, distance: destinationData.distance, source: "本地路线" });
 
     const controller = new AbortController();
-    const url = `https://router.project-osrm.org/route/v1/foot/${currentLocation[1]},${currentLocation[0]};${destinationLocation[1]},${destinationLocation[0]}?overview=full&geometries=geojson`;
+    const url = `https://router.project-osrm.org/route/v1/foot/${currentLocation[1]},${currentLocation[0]};${destinationData.lng},${destinationData.lat}?overview=full&geometries=geojson`;
 
     fetch(url, { signal: controller.signal })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
-        const coordinates = data?.routes?.[0]?.geometry?.coordinates;
+        const route = data?.routes?.[0];
+        const coordinates = route?.geometry?.coordinates;
         if (!coordinates?.length) return;
         routeLayer.clearLayers();
         drawRoute(coordinates.map(([lng, lat]) => [lat, lng]));
+        onRouteUpdate?.({
+          eta: `约${Math.max(1, Math.round(route.duration / 60))}分钟`,
+          distance: route.distance >= 1000 ? `${(route.distance / 1000).toFixed(1)}km` : `${Math.round(route.distance)}m`,
+          source: "OSRM步行路线",
+        });
       })
       .catch(() => {});
 
     return () => controller.abort();
-  }, []);
+  }, [destinationData, onRouteUpdate]);
 
   useEffect(() => {
     const overlayLayer = overlayLayerRef.current;
@@ -304,7 +353,7 @@ function MiniMap({ lostMode, selectedPoi, setSelectedPoi, connectedStation, onTo
       });
 
     L.marker(currentLocation, { icon: createPin("起", "start") }).addTo(overlayLayer);
-    L.marker(destinationLocation, { icon: createPin("终", "finish") }).addTo(overlayLayer);
+    L.marker([destinationData.lat, destinationData.lng], { icon: createPin("终", "finish") }).addTo(overlayLayer);
 
     if (lostMode) {
       landmarks.forEach((point, index) => {
@@ -318,7 +367,7 @@ function MiniMap({ lostMode, selectedPoi, setSelectedPoi, connectedStation, onTo
         icon: createPin("电", "station"),
       }).addTo(overlayLayer);
     }
-  }, [lostMode, setSelectedPoi]);
+  }, [lostMode, setSelectedPoi, destinationData]);
 
   return (
     <section className={cx("mini-map", lostMode && "lost")}>
@@ -389,18 +438,82 @@ function MapScreen({
   setSelectedPoi,
   setActive,
   onScanOrder,
+  destinationData,
+  setDestinationData,
 }) {
-  const externalLinks = useMemo(() => {
-    const q = `${destination.lat},${destination.lng}`;
-    return {
-      google: `https://www.google.com/maps/search/?api=1&query=${q}`,
-      amap: `https://uri.amap.com/navigation?to=${destination.lng},${destination.lat},${encodeURIComponent(destination.name)}&mode=ride&coordinate=gaode&callnative=1`,
-    };
-  }, []);
+  const [query, setQuery] = useState(destinationData.name);
+  const [searchState, setSearchState] = useState("idle");
+  const [searchResults, setSearchResults] = useState(searchPresets);
+  const [routeInfo, setRouteInfo] = useState({
+    eta: destinationData.eta,
+    distance: destinationData.distance,
+    source: "OSRM步行路线",
+  });
+  const handleRouteUpdate = useCallback((info) => setRouteInfo(info), []);
+
+  async function searchDestination(event) {
+    event?.preventDefault();
+    const keyword = query.trim();
+    if (!keyword) return;
+    setSearchState("searching");
+
+    const localMatches = searchPresets.filter((item) => item.name.includes(keyword));
+    try {
+      const params = new URLSearchParams({
+        q: `${keyword} 广州 石牌村`,
+        format: "jsonv2",
+        limit: "5",
+        addressdetails: "1",
+      });
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+      const data = response.ok ? await response.json() : [];
+      const remoteMatches = data.map((item) => ({
+        name: item.name || keyword,
+        detail: item.display_name,
+        eta: "正在计算",
+        distance: "路线计算中",
+        lat: Number(item.lat),
+        lng: Number(item.lon),
+      }));
+      const nextResults = [...localMatches, ...remoteMatches].filter((item) => item.lat && item.lng);
+      setSearchResults(nextResults.length ? nextResults : searchPresets);
+      if (nextResults[0]) {
+        selectDestination(nextResults[0]);
+      }
+      setSearchState(nextResults[0] ? "done" : "empty");
+    } catch {
+      setSearchResults(localMatches.length ? localMatches : searchPresets);
+      if (localMatches[0]) {
+        selectDestination(localMatches[0]);
+      }
+      setSearchState(localMatches[0] ? "done" : "empty");
+    }
+  }
+
+  function selectDestination(place) {
+    setDestinationData(place);
+    setQuery(place.name);
+    setRouteInfo({ eta: place.eta, distance: place.distance, source: "路线计算中" });
+  }
 
   return (
-    <div className="screen-content">
-      <AppHeader title="导航地图" subtitle="金龙城中村配送区" onScanOrder={onScanOrder} />
+    <div className="screen-content map-screen">
+      <form className="map-search-card" onSubmit={searchDestination}>
+        <MapPin size={18} />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="输入目的地、门牌、店铺或巷口"
+          aria-label="输入目的地"
+        />
+        <button className="round dark" type="submit" aria-label="搜索目的地">
+          <Search size={17} />
+        </button>
+        <label className="round orange header-camera" aria-label="订单地址截图识别">
+          <Camera size={17} />
+          <input type="file" accept="image/*" capture="environment" onChange={onScanOrder} />
+        </label>
+      </form>
 
       {lostMode && connectedStation ? (
         <div className="connection-banner">
@@ -410,13 +523,12 @@ function MapScreen({
         </div>
       ) : null}
 
-      <div className="search-row">
-        <MapPin size={16} />
-        <input value={destination.name} readOnly aria-label="当前目的地" />
-        <label className="round orange header-camera" aria-label="订单地址截图识别">
-          <Camera size={17} />
-          <input type="file" accept="image/*" capture="environment" onChange={onScanOrder} />
-        </label>
+      <div className="map-quick-filters">
+        {["门牌", "店铺", "巷口", "停靠站"].map((item) => (
+          <button key={item} type="button" onClick={() => setQuery(item)}>
+            {item}
+          </button>
+        ))}
       </div>
 
       <MiniMap
@@ -424,6 +536,8 @@ function MapScreen({
         selectedPoi={selectedPoi}
         setSelectedPoi={setSelectedPoi}
         connectedStation={connectedStation}
+        destinationData={destinationData}
+        onRouteUpdate={handleRouteUpdate}
         onToggleLost={() => {
           const nextLostMode = !lostMode;
           setLostMode(nextLostMode);
@@ -436,8 +550,24 @@ function MapScreen({
 
       <LandmarkSheet point={selectedPoi} onClose={() => setSelectedPoi(null)} />
 
+      {searchResults.length ? (
+        <div className="map-result-strip">
+          {searchResults.slice(0, 3).map((place) => (
+            <button
+              key={`${place.name}-${place.lat}-${place.lng}`}
+              className={place.name === destinationData.name ? "active" : ""}
+              type="button"
+              onClick={() => selectDestination(place)}
+            >
+              <strong>{place.name}</strong>
+              <span>{place.distance}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {lostMode ? (
-        <section className="panel warning-panel">
+        <section className="panel warning-panel map-floating-panel">
           <div className="panel-title">
             <div>
               <h2>迷路辅助模式</h2>
@@ -466,21 +596,14 @@ function MapScreen({
           </div>
         </section>
       ) : (
-        <section className="panel destination-panel">
-          <InfoLine icon={MapPin} label="Current Destination" value={destination.name} />
-          <InfoLine icon={Layers3} label="Entrance Hint" value={destination.detail} />
-          <InfoLine icon={Compass} label="Estimated Time" value={`${destination.eta}  ·  ${destination.distance}  ·  途经 永兴茶餐店`} />
-          <div className="action-row">
-            <a className="secondary-link" href={externalLinks.google} target="_blank" rel="noreferrer">
-              <ExternalLink size={15} />
-              Google Maps
-            </a>
-            <a className="secondary-link" href={externalLinks.amap} target="_blank" rel="noreferrer">
-              <ExternalLink size={15} />
-              高德导航
-            </a>
-          </div>
-          <button className="end-button" type="button">结束导航</button>
+        <section className="panel destination-panel map-bottom-sheet">
+          <div className="sheet-handle" />
+          <InfoLine icon={MapPin} label="当前终点" value={destinationData.name} />
+          <InfoLine icon={Layers3} label="入口提示" value={destinationData.detail} />
+          <InfoLine icon={Compass} label="预计路线" value={`${routeInfo.eta} · ${routeInfo.distance} · ${routeInfo.source}`} />
+          <button className="end-button" type="button">
+            {searchState === "searching" ? "正在搜索目的地..." : "结束导航"}
+          </button>
         </section>
       )}
     </div>
@@ -973,6 +1096,7 @@ export function App() {
   const [lostMode, setLostMode] = useState(false);
   const [connectedStation, setConnectedStation] = useState(null);
   const [selectedPoi, setSelectedPoi] = useState(null);
+  const [navDestination, setNavDestination] = useState(defaultDestination);
   const [scanState, setScanState] = useState("idle");
   const [uploads, setUploads] = useState(initialUploads);
   const [selectedUploadType, setSelectedUploadType] = useState("door");
@@ -987,6 +1111,7 @@ export function App() {
       URL.revokeObjectURL(orderPreview.url);
     }
     setOrderPreview({ url: previewUrl, name: file.name });
+    setNavDestination(defaultDestination);
     setToast("正在识别订单截图...");
     setActive("map");
     window.setTimeout(() => setToast("已识别订单截图：目的地为金龙巷18号"), 800);
@@ -1020,6 +1145,8 @@ export function App() {
             setSelectedPoi={setSelectedPoi}
             setActive={setActive}
             onScanOrder={scanOrderAddress}
+            destinationData={navDestination}
+            setDestinationData={setNavDestination}
           />
         ) : null}
         {active === "scan" ? (
