@@ -404,6 +404,7 @@ function MiniMap({
           aria-label={lostMode ? "退出迷路模式" : "进入迷路模式"}
         >
           {lostMode ? <CheckCircle2 size={18} /> : <ShieldCheck size={18} />}
+          <span>{lostMode ? "退出" : "迷路"}</span>
         </button>
       </div>
 

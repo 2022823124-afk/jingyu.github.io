@@ -634,6 +634,7 @@ a {
   top: 92px;
   z-index: 8;
   display: grid;
+  justify-items: center;
   gap: 10px;
 }
 
@@ -668,9 +669,22 @@ a {
 }
 
 .map-tool-button.lost-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 64px;
+  height: 42px;
+  border-radius: 21px;
   background: rgba(74, 66, 19, 0.94);
   color: #ffe34b;
   border-color: rgba(255, 234, 65, 0.38);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.map-tool-button.lost-tool span {
+  line-height: 1;
 }
 
 .map-tool-button.lost-tool.active {
