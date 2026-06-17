@@ -1,8 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="118" fill="#151820"/>
-  <path d="M278 132h83c18 0 32 14 32 32v150c0 13-11 24-24 24s-24-11-24-24V188h-67c-13 0-24-11-24-24s11-32 24-32z" fill="#fff3df"/>
-  <path d="M201 136h77c13 0 24 11 24 24v151c0 13-11 24-24 24s-24-11-24-24V184h-53c-13 0-24-11-24-24s11-24 24-24z" fill="#ff8a1f"/>
-  <path d="M332 289l-116 53 123 49c14 5 21 20 16 34s-20 21-34 16l-181-72c-21-8-22-38-1-48l172-79c13-6 29 0 35 13s0 28-14 34z" fill="#fff3df"/>
-  <path d="M241 298c0 54-64 112-64 112s-64-58-64-112a64 64 0 1 1 128 0z" fill="#ff8a1f"/>
-  <circle cx="177" cy="298" r="25" fill="#151820"/>
+  <defs>
+    <radialGradient id="bgGlow" cx="55%" cy="42%" r="52%">
+      <stop offset="0%" stop-color="#ff941f" stop-opacity=".34"/>
+      <stop offset="45%" stop-color="#ff941f" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#ff941f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bg" x1="118" y1="58" x2="410" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20242e"/>
+      <stop offset="1" stop-color="#12151d"/>
+    </linearGradient>
+    <linearGradient id="doorFace" x1="202" y1="132" x2="315" y2="255" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff9b21"/>
+      <stop offset="1" stop-color="#ff7817"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="244" y1="236" x2="363" y2="381" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8ea"/>
+      <stop offset="1" stop-color="#fff1d6"/>
+    </linearGradient>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000" flood-opacity=".24"/>
+    </filter>
+    <filter id="doorGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feDropShadow dx="0" dy="0" stdDeviation="16" flood-color="#ff9b21" flood-opacity=".55"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#bgGlow)"/>
+
+  <g filter="url(#doorGlow)">
+    <path d="M213 141c0-11 10-19 21-16l118 35c9 3 15 11 15 20v107c0 10-8 18-18 18h-27c-10 0-18-8-18-18v-82l-50-14v114c0 10-8 18-18 18h-5c-10 0-18-8-18-18V141z" fill="url(#doorFace)"/>
+    <path d="M304 205l63-25v107c0 10-8 18-18 18h-27c-10 0-18-8-18-18v-82z" fill="#fff2dc"/>
+    <path d="M235 125l117 35-48 45-91-29v-35c0-11 11-19 22-16z" fill="#ff981f"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <path d="M238 324l89 43-135 77-54-26 118-67-78-37 151-76c10-5 22-1 27 9 5 9 1 21-8 26l-110 51z" fill="url(#cream)"/>
+    <path d="M181 337l-43 81-1-1 118-67-77-36 1-1c9 6 15 15 16 26l-14-2z" fill="#fff6e8"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <path d="M164 303c0 47-56 96-56 96s-56-49-56-96a56 56 0 1 1 112 0z" fill="#ff8a1f"/>
+    <circle cx="108" cy="303" r="23" fill="#151820"/>
+  </g>
 </svg>
