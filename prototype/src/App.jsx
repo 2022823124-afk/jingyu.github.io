@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { getAmapStatus } from "./amapGateway.js";
 import {
   BadgeCheck,
   BatteryCharging,
@@ -529,6 +530,9 @@ function MapScreen({
             {item}
           </button>
         ))}
+      </div>
+      <div className="map-provider-chip">
+        {getAmapStatus() === "ready" ? "高德已启用" : "高德预留 · 当前使用开源导航"}
       </div>
 
       <MiniMap
