@@ -122,12 +122,7 @@ const stations = [
   },
 ];
 
-const initialUploads = [
-  { title: "金龙巷18号门牌", type: "门牌号码", time: "刚刚", state: "已收录" },
-  { title: "永兴茶餐店招牌", type: "店铺招牌", time: "2小时前", state: "已收录" },
-  { title: "平安路B巷入口", type: "巷口标识", time: "昨天", state: "审核中" },
-  { title: "A栋3单元楼道", type: "楼道入口", time: "3天前", state: "已收录" },
-];
+const initialUploads = [];
 
 const tabs = [
   { id: "map", label: "地图", icon: Map },
@@ -856,16 +851,21 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
   const [previewName, setPreviewName] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [selectedUpload, setSelectedUpload] = useState(null);
 
   function submitUpload() {
     if (!previewUrl) return;
     const type = uploadTypes.find((item) => item.id === selectedUploadType);
     setUploads((items) => [
       {
-        title: previewName || "金龙巷新环境照片",
+        id: `upload-${Date.now()}`,
+        title: previewName || `${type?.label || "环境"}照片`,
         type: type?.label || "环境照片",
+        typeId: selectedUploadType,
         time: "刚刚",
         state: "审核中",
+        image: previewUrl,
+        location: "石牌村附近，等待审核确认精确位置",
       },
       ...items,
     ]);
@@ -873,9 +873,6 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
   }
 
   function resetPhoto() {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
     setPreviewUrl("");
     setPreviewName("");
     setSubmitted(false);
@@ -884,12 +881,13 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
   function handlePhotoPick(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setPreviewUrl(URL.createObjectURL(file));
-    setPreviewName(file.name.replace(/\.[^.]+$/, ""));
-    setSubmitted(false);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPreviewUrl(String(reader.result));
+      setPreviewName(file.name.replace(/\.[^.]+$/, ""));
+      setSubmitted(false);
+    };
+    reader.readAsDataURL(file);
   }
 
   return (
@@ -945,50 +943,76 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
           </section>
 
           <input className="location-input" value="补充位置描述（可选） 如：金龙巷18号旁" readOnly />
-          <button className="submit-button" type="button" onClick={submitUpload}>
+          <button className="submit-button" type="button" onClick={submitUpload} disabled={submitted}>
             <CheckCircle2 size={17} />
             {submitted ? "已提交审核" : "提交入库"}
           </button>
         </>
       ) : null}
 
-      <StatsCard />
-      <UploadList uploads={uploads} />
+      <StatsCard uploads={uploads} />
+      <UploadList uploads={uploads} onOpen={setSelectedUpload} />
+      {selectedUpload ? <UploadDetailModal item={selectedUpload} onClose={() => setSelectedUpload(null)} /> : null}
     </div>
   );
 }
 
-function StatsCard() {
+function StatsCard({ uploads }) {
+  const collected = uploads.filter((item) => item.state === "已收录").length;
   return (
     <section className="stats-card">
       <h2>我的贡献</h2>
       <div className="stats-grid">
-        <strong>47张<span>上传照片</span></strong>
-        <strong>44张<span>已收录</span></strong>
-        <strong>1.2k次<span>被调用</span></strong>
+        <strong>{uploads.length}张<span>上传照片</span></strong>
+        <strong>{collected}张<span>已收录</span></strong>
+        <strong>0次<span>被调用</span></strong>
       </div>
     </section>
   );
 }
 
-function UploadList({ uploads }) {
+function UploadList({ uploads, onOpen }) {
   return (
     <section className="recent">
       <div className="section-head">
         <h2>最近上传</h2>
-        <button type="button">查看全部</button>
+        <button type="button" onClick={() => uploads[0] && onOpen(uploads[0])}>查看全部</button>
       </div>
-      {uploads.map((item) => (
-        <div className="upload-row" key={`${item.title}-${item.time}`}>
-          <span className="small-thumb" />
+      {uploads.length ? uploads.map((item) => (
+        <button className="upload-row" key={item.id || `${item.title}-${item.time}`} type="button" onClick={() => onOpen(item)}>
+          <span className="small-thumb" style={item.image ? { backgroundImage: `url(${item.image})` } : undefined} />
           <div>
             <strong>{item.title}</strong>
             <small>{item.type} · {item.time}</small>
           </div>
           <em className={item.state === "审核中" ? "pending" : "ok"}>{item.state}</em>
+        </button>
+      )) : (
+        <div className="empty-library">
+          <ImagePlus size={22} />
+          <strong>暂无上传照片</strong>
+          <span>上传后会进入本地照片库，审核后可用于人文地图。</span>
         </div>
-      ))}
+      )}
     </section>
+  );
+}
+
+function UploadDetailModal({ item, onClose }) {
+  return (
+    <div className="upload-modal" role="dialog" aria-modal="true" aria-label="照片详情">
+      <div className="upload-modal-card">
+        <button className="round dark upload-modal-close" type="button" onClick={onClose} aria-label="关闭照片详情">
+          <X size={16} />
+        </button>
+        {item.image ? <img src={item.image} alt={item.title} /> : <div className="modal-photo-placeholder" />}
+        <div className="upload-modal-copy">
+          <strong>{item.title}</strong>
+          <span>{item.type} · {item.state}</span>
+          <p>{item.location || "等待审核确认位置"}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1043,7 +1067,7 @@ function StationScreen({ connectedStation, setConnectedStation }) {
   );
 }
 
-function ProfileScreen() {
+function ProfileScreen({ uploads }) {
   const [profileNotice, setProfileNotice] = useState("");
   const profileActions = [
     { label: "消息通知", icon: Bell, badge: "3", message: "已打开消息通知" },
@@ -1080,10 +1104,10 @@ function ProfileScreen() {
       </section>
 
       <section className="profile-stats">
-        <Metric icon={MapPin} value="1,248" label="导航被调用" />
-        <Metric icon={Upload} value="47" label="上传照片" />
-        <Metric icon={Camera} value="326" label="识别次数" />
-        <Metric icon={Star} value="235" label="贡献积分" />
+        <Metric icon={MapPin} value="0" label="导航被调用" />
+        <Metric icon={Upload} value={String(uploads.length)} label="上传照片" />
+        <Metric icon={Camera} value="0" label="识别次数" />
+        <Metric icon={Star} value="0" label="贡献积分" />
       </section>
 
       <section className="badge-row">
@@ -1209,10 +1233,25 @@ export function App() {
   const [selectedPoi, setSelectedPoi] = useState(null);
   const [navDestination, setNavDestination] = useState(defaultDestination);
   const [scanState, setScanState] = useState("idle");
-  const [uploads, setUploads] = useState(initialUploads);
+  const [uploads, setUploads] = useState(() => {
+    try {
+      const savedUploads = window.localStorage.getItem("doori-photo-library");
+      return savedUploads ? JSON.parse(savedUploads) : initialUploads;
+    } catch {
+      return initialUploads;
+    }
+  });
   const [selectedUploadType, setSelectedUploadType] = useState("door");
   const [toast, setToast] = useState("");
   const [orderPreview, setOrderPreview] = useState(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("doori-photo-library", JSON.stringify(uploads));
+    } catch {
+      // Large image data can exceed browser storage; keep the in-memory library usable.
+    }
+  }, [uploads]);
 
   function scanOrderAddress(event) {
     const file = event.target.files?.[0];
@@ -1280,7 +1319,7 @@ export function App() {
         {active === "station" ? (
           <StationScreen connectedStation={connectedStation} setConnectedStation={setConnectedStation} />
         ) : null}
-        {active === "profile" ? <ProfileScreen /> : null}
+        {active === "profile" ? <ProfileScreen uploads={uploads} /> : null}
 
         <BottomNav active={active} setActive={setActive} />
         {showSplash ? <SplashScreen onEnter={() => setShowSplash(false)} /> : null}
