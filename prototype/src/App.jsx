@@ -408,12 +408,6 @@ function MiniMap({
         </button>
       </div>
 
-      {lostMode && connectedStation ? (
-        <div className="map-chip bluetooth">
-          <Bluetooth size={14} />
-          已连接 {connectedStation.name}
-        </div>
-      ) : null}
     </section>
   );
 }

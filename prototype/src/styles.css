@@ -639,15 +639,11 @@ a {
 }
 
 .map-screen .map-actions {
-  top: auto;
+  top: 246px;
   right: 14px;
-  bottom: 164px;
+  bottom: auto;
   z-index: 18;
   gap: 9px;
-}
-
-.map-screen .mini-map.lost .map-actions {
-  bottom: 350px;
 }
 
 .map-tool-button {
