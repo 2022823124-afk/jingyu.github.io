@@ -1,5 +1,5 @@
-const CACHE_NAME = "doori-v1";
-const CORE_ASSETS = ["./", "./manifest.webmanifest", "./icons/doori-icon.svg"];
+const CACHE_NAME = "doori-v2";
+const CORE_ASSETS = ["./", "./manifest.webmanifest", "./icons/doori-icon.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
