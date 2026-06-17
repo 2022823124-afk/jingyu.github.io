@@ -1118,9 +1118,7 @@ function SplashScreen({ onEnter }) {
     <section className="splash-screen">
       <div className="splash-dot" />
       <div className="splash-logo" aria-label="DOORI">
-        <div className="door-mark" />
-        <div className="route-mark" />
-        <MapPin size={34} />
+        <img src="./icons/doori-icon.png" alt="DOORI" />
       </div>
       <div className="splash-copy">
         <h1>DOORI</h1>
