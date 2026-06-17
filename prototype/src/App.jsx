@@ -9,7 +9,9 @@ import {
   Bluetooth,
   Camera,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   CircleUserRound,
   Compass,
   Crosshair,
@@ -27,6 +29,7 @@ import {
   Star,
   Upload,
   Wifi,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -417,14 +420,16 @@ function LandmarkSheet({ point, onClose }) {
   if (!point) return null;
   return (
     <aside className="poi-sheet">
-      <div className={cx("thumb", point.image)} />
+      <div className={cx("thumb poi-photo", point.image)}>
+        <span>照片</span>
+      </div>
       <div className="sheet-copy">
         <strong>{point.title}</strong>
-        <span>{point.subtitle}</span>
-        <small>{point.uploader}上传 · {point.distance}</small>
+        <span className="poi-location-note">位置描述：{point.subtitle}</span>
+        <small>{point.uploader}上传 · 距你{point.distance}</small>
       </div>
-      <button className="round ghost" type="button" onClick={onClose} aria-label="关闭照片点位">
-        <ChevronRight size={18} />
+      <button className="round ghost poi-close" type="button" onClick={onClose} aria-label="关闭照片点位">
+        <X size={16} />
       </button>
     </aside>
   );
@@ -444,7 +449,9 @@ function MapScreen({
 }) {
   const [query, setQuery] = useState(destinationData.name);
   const [searchState, setSearchState] = useState("idle");
-  const [searchResults, setSearchResults] = useState(searchPresets);
+  const [searchResults, setSearchResults] = useState([]);
+  const [lostPanelCollapsed, setLostPanelCollapsed] = useState(true);
+  const [routeSheetCollapsed, setRouteSheetCollapsed] = useState(true);
   const [routeInfo, setRouteInfo] = useState({
     eta: destinationData.eta,
     distance: destinationData.distance,
@@ -477,16 +484,16 @@ function MapScreen({
         lng: Number(item.lon),
       }));
       const nextResults = [...localMatches, ...remoteMatches].filter((item) => item.lat && item.lng);
-      setSearchResults(nextResults.length ? nextResults : searchPresets);
       if (nextResults[0]) {
         selectDestination(nextResults[0]);
       }
+      setSearchResults(nextResults.slice(1, 4));
       setSearchState(nextResults[0] ? "done" : "empty");
     } catch {
-      setSearchResults(localMatches.length ? localMatches : searchPresets);
       if (localMatches[0]) {
         selectDestination(localMatches[0]);
       }
+      setSearchResults(localMatches.slice(1, 4));
       setSearchState(localMatches[0] ? "done" : "empty");
     }
   }
@@ -495,6 +502,7 @@ function MapScreen({
     setDestinationData(place);
     setQuery(place.name);
     setRouteInfo({ eta: place.eta, distance: place.distance, source: "路线计算中" });
+    setSearchResults([]);
   }
 
   return (
@@ -556,6 +564,9 @@ function MapScreen({
 
       {searchResults.length ? (
         <div className="map-result-strip">
+          <button className="result-strip-close" type="button" onClick={() => setSearchResults([])} aria-label="收起候选地点">
+            <X size={14} />
+          </button>
           {searchResults.slice(0, 3).map((place) => (
             <button
               key={`${place.name}-${place.lat}-${place.lng}`}
@@ -571,43 +582,74 @@ function MapScreen({
       ) : null}
 
       {lostMode ? (
-        <section className="panel warning-panel map-floating-panel">
-          <div className="panel-title">
+        <section className={cx("panel warning-panel map-floating-panel", lostPanelCollapsed && "collapsed")}>
+          <button
+            className="panel-title collapsible-title"
+            type="button"
+            onClick={() => setLostPanelCollapsed((value) => !value)}
+          >
             <div>
               <h2>迷路辅助模式</h2>
-              <p>范围已显示附近门牌、巷口、店铺、楼道及充电站</p>
+              <p>{lostPanelCollapsed ? "点圆点查看照片和位置描述" : "范围已显示附近门牌、巷口、店铺、楼道及充电站"}</p>
             </div>
-            <Zap size={18} />
-          </div>
-          <div className="near-list">
-            {landmarks.slice(0, 3).map((point) => (
-              <button key={point.id} type="button" onClick={() => setSelectedPoi(point)}>
-                <span className={cx("dot", point.color)} />
-                <strong>{point.title}</strong>
-                <small>{point.distance}</small>
-              </button>
-            ))}
-          </div>
-          <div className="action-row">
-            <button className="primary subtle" type="button">
-              <Bluetooth size={16} />
-              S1已连接
+            {lostPanelCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+          {!lostPanelCollapsed ? (
+            <>
+              <div className="near-list">
+                {landmarks.slice(0, 3).map((point) => (
+                  <button key={point.id} type="button" onClick={() => setSelectedPoi(point)}>
+                    <span className={cx("dot", point.color)} />
+                    <strong>{point.title}</strong>
+                    <small>{point.distance}</small>
+                  </button>
+                ))}
+              </div>
+              <div className="action-row">
+                <button className="primary subtle" type="button">
+                  <Bluetooth size={16} />
+                  S1已连接
+                </button>
+                <button className="primary amber" type="button" onClick={() => setActive("station")}>
+                  <Zap size={16} />
+                  2个充电站
+                </button>
+              </div>
+            </>
+          ) : (
+            <button className="compact-nearest" type="button" onClick={() => setSelectedPoi(landmarks[0])}>
+              <span className={cx("dot", landmarks[0].color)} />
+              {landmarks[0].title}
+              <small>{landmarks[0].distance}</small>
             </button>
-            <button className="primary amber" type="button" onClick={() => setActive("station")}>
-              <Zap size={16} />
-              2个充电站
-            </button>
-          </div>
+          )}
         </section>
       ) : (
-        <section className="panel destination-panel map-bottom-sheet">
-          <div className="sheet-handle" />
-          <InfoLine icon={MapPin} label="当前终点" value={destinationData.name} />
-          <InfoLine icon={Layers3} label="入口提示" value={destinationData.detail} />
-          <InfoLine icon={Compass} label="预计路线" value={`${routeInfo.eta} · ${routeInfo.distance} · ${routeInfo.source}`} />
-          <button className="end-button" type="button">
-            {searchState === "searching" ? "正在搜索目的地..." : "结束导航"}
+        <section className={cx("panel destination-panel map-bottom-sheet", routeSheetCollapsed && "collapsed")}>
+          <button
+            className="sheet-toggle"
+            type="button"
+            onClick={() => setRouteSheetCollapsed((value) => !value)}
+            aria-label={routeSheetCollapsed ? "展开导航详情" : "收起导航详情"}
+          >
+            <span className="sheet-handle" />
+            {routeSheetCollapsed ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
+          {routeSheetCollapsed ? (
+            <div className="route-compact">
+              <strong>{destinationData.name}</strong>
+              <span>{routeInfo.eta} · {routeInfo.distance}</span>
+            </div>
+          ) : (
+            <>
+              <InfoLine icon={MapPin} label="当前终点" value={destinationData.name} />
+              <InfoLine icon={Layers3} label="入口提示" value={destinationData.detail} />
+              <InfoLine icon={Compass} label="预计路线" value={`${routeInfo.eta} · ${routeInfo.distance} · ${routeInfo.source}`} />
+              <button className="end-button" type="button">
+                {searchState === "searching" ? "正在搜索目的地..." : "结束导航"}
+              </button>
+            </>
+          )}
         </section>
       )}
     </div>

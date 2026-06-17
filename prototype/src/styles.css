@@ -766,16 +766,17 @@ a {
 
 .map-screen .poi-sheet {
   position: absolute;
-  z-index: 16;
+  z-index: 24;
   left: 14px;
   right: 14px;
-  bottom: 188px;
+  bottom: 154px;
   margin: 0;
+  backdrop-filter: blur(12px);
 }
 
 .map-result-strip {
   position: absolute;
-  z-index: 14;
+  z-index: 17;
   left: 14px;
   right: 14px;
   top: 164px;
@@ -802,6 +803,19 @@ a {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.map-result-strip .result-strip-close {
+  flex: 0 0 34px;
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
+  place-items: center;
+  align-self: center;
+  padding: 0;
+  border-radius: 50%;
+  color: #f6f1e9;
+  background: rgba(22, 24, 25, 0.76);
+}
+
 .map-result-strip button.active {
   border-color: rgba(255, 116, 23, 0.86);
   background: rgba(255, 116, 23, 0.92);
@@ -825,6 +839,24 @@ a {
   border-radius: 12px;
   background-size: cover;
   background-position: center;
+}
+
+.poi-photo {
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.poi-photo span {
+  position: absolute;
+  left: 6px;
+  bottom: 5px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: #fff7eb;
+  background: rgba(0, 0, 0, 0.44);
+  font-size: 9px;
+  font-weight: 800;
 }
 
 .thumb.door,
@@ -876,10 +908,23 @@ a {
   font-size: 11px;
 }
 
+.sheet-copy .poi-location-note {
+  color: #f7f2ea;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .sheet-copy small {
   margin-top: 7px;
   color: #7f8582;
   font-size: 10px;
+}
+
+.poi-close {
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .panel,
@@ -915,12 +960,64 @@ a {
   box-shadow: 0 -18px 36px rgba(20, 28, 34, 0.16);
 }
 
+.map-bottom-sheet.collapsed {
+  left: 14px;
+  right: 14px;
+  bottom: 82px;
+  padding: 8px 14px 12px;
+  border-radius: 22px;
+}
+
+.sheet-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 20px;
+  padding: 0;
+  color: #687174;
+  background: transparent;
+}
+
 .map-bottom-sheet .sheet-handle {
   width: 54px;
   height: 5px;
-  margin: 0 auto 8px;
+  margin: 0 auto;
   border-radius: 5px;
   background: #d9dcde;
+}
+
+.sheet-toggle svg {
+  position: absolute;
+  right: 0;
+}
+
+.map-bottom-sheet:not(.collapsed) .sheet-toggle {
+  margin-bottom: 8px;
+}
+
+.route-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.route-compact strong {
+  overflow: hidden;
+  color: #171a1d;
+  font-size: 15px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.route-compact span {
+  flex: 0 0 auto;
+  color: #ff7417;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .map-bottom-sheet .info-line {
@@ -949,6 +1046,10 @@ a {
   bottom: 82px;
 }
 
+.map-floating-panel.collapsed {
+  padding: 10px 12px;
+}
+
 .map-screen .connection-banner {
   position: absolute;
   z-index: 16;
@@ -960,6 +1061,14 @@ a {
 .warning-panel {
   border-color: rgba(255, 206, 56, 0.33);
   background: #1c1a12;
+}
+
+.collapsible-title {
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
 }
 
 .panel-title,
@@ -1003,6 +1112,27 @@ p {
   display: grid;
   gap: 8px;
   margin: 12px 0;
+}
+
+.compact-nearest {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 8px;
+  padding: 0 10px;
+  border-radius: 12px;
+  color: #f7f2ea;
+  background: rgba(255, 255, 255, 0.055);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.compact-nearest small {
+  margin-left: auto;
+  color: #8f908d;
+  font-size: 10px;
 }
 
 .near-list button,

@@ -2,6 +2,10 @@
 
 城中村外卖骑手导航系统手机 App 原型。
 
+## 在线预览
+
+打开网页：<https://2022823124-afk.github.io/jingyu.github.io/>
+
 ## 本地运行
 
 ```bash
