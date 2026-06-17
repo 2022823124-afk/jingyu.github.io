@@ -672,7 +672,7 @@ a {
   position: absolute;
   right: 42px;
   bottom: 16px;
-  z-index: 8;
+  z-index: 18;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -688,8 +688,14 @@ a {
 }
 
 .map-screen .lost-pill {
-  right: 78px;
-  bottom: 198px;
+  left: 14px;
+  right: auto;
+  bottom: 188px;
+  min-width: 106px;
+  height: 42px;
+  border-radius: 21px;
+  background: rgba(74, 66, 19, 0.96);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
 }
 
 .lost-pill.active {
@@ -698,6 +704,11 @@ a {
   background: rgba(12, 106, 46, 0.9);
   border-color: rgba(44, 226, 108, 0.5);
   color: #36ef7a;
+}
+
+.map-screen .lost-pill.active {
+  min-width: 136px;
+  background: rgba(12, 106, 46, 0.96);
 }
 
 .map-chip {
@@ -915,7 +926,7 @@ a {
 
 .map-floating-panel {
   position: absolute;
-  z-index: 15;
+  z-index: 19;
   left: 14px;
   right: 14px;
   bottom: 82px;
