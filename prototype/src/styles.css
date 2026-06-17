@@ -324,23 +324,6 @@ a {
   box-shadow: 0 8px 18px rgba(29, 45, 54, 0.14);
 }
 
-.map-provider-chip {
-  position: absolute;
-  z-index: 13;
-  left: 14px;
-  top: 128px;
-  height: 28px;
-  padding: 0 11px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 14px;
-  background: rgba(22, 24, 25, 0.82);
-  color: #f8d28c;
-  font-size: 11px;
-  font-weight: 800;
-  box-shadow: 0 8px 18px rgba(29, 45, 54, 0.18);
-}
-
 .mini-map {
   position: relative;
   height: 268px;
@@ -402,9 +385,9 @@ a {
 }
 
 .map-screen .real-map-badge {
-  top: auto;
+  top: 128px;
   left: 14px;
-  bottom: 226px;
+  bottom: auto;
 }
 
 .osm-pin {
@@ -642,7 +625,7 @@ a {
 
 .map-screen .map-station-tag {
   left: 14px;
-  top: 132px;
+  top: 164px;
 }
 
 .map-actions {
@@ -655,77 +638,45 @@ a {
 }
 
 .map-screen .map-actions {
-  top: auto;
+  top: 166px;
   right: 14px;
-  bottom: 246px;
+  bottom: auto;
+  z-index: 18;
+  gap: 9px;
 }
 
-.locate-fab {
-  position: absolute;
-  left: 14px;
-  bottom: 14px;
-  z-index: 8;
+.map-tool-button {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: #ff7417;
-  color: #fff;
-  box-shadow: 0 10px 26px rgba(255, 116, 23, 0.35);
+  background: rgba(20, 22, 24, 0.92);
+  color: #f7f3ee;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 22px rgba(20, 28, 34, 0.2);
+  backdrop-filter: blur(10px);
 }
 
-.map-screen .locate-fab {
-  left: auto;
-  right: 14px;
-  bottom: 188px;
+.map-tool-button.navigation-tool {
   width: 52px;
   height: 52px;
   background: #fff;
   color: #1677ff;
+  border-color: rgba(22, 119, 255, 0.08);
+  box-shadow: 0 14px 28px rgba(20, 28, 34, 0.2);
 }
 
-.lost-pill {
-  position: absolute;
-  right: 42px;
-  bottom: 16px;
-  z-index: 18;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 78px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 18px;
-  background: #4a4213;
-  border: 1px solid rgba(255, 234, 65, 0.45);
+.map-tool-button.lost-tool {
+  background: rgba(74, 66, 19, 0.94);
   color: #ffe34b;
-  font-size: 13px;
-  font-weight: 800;
+  border-color: rgba(255, 234, 65, 0.38);
 }
 
-.map-screen .lost-pill {
-  left: 14px;
-  right: auto;
-  bottom: 188px;
-  min-width: 106px;
-  height: 42px;
-  border-radius: 21px;
-  background: rgba(74, 66, 19, 0.96);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
-}
-
-.lost-pill.active {
-  min-width: 126px;
-  justify-content: center;
+.map-tool-button.lost-tool.active {
   background: rgba(12, 106, 46, 0.9);
   border-color: rgba(44, 226, 108, 0.5);
   color: #36ef7a;
-}
-
-.map-screen .lost-pill.active {
-  min-width: 136px;
-  background: rgba(12, 106, 46, 0.96);
 }
 
 .map-chip {
@@ -1055,7 +1006,7 @@ a {
   z-index: 16;
   left: 14px;
   right: 14px;
-  top: 128px;
+  top: 164px;
 }
 
 .warning-panel {
@@ -2198,13 +2149,6 @@ p {
   font-size: 14px;
   font-weight: 900;
   box-shadow: 0 18px 34px rgba(255, 116, 23, 0.26);
-}
-
-.install-hint {
-  margin-top: -16px;
-  color: #8b8780;
-  font-size: 11px;
-  text-align: center;
 }
 
 @media (max-width: 640px) {

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { getAmapStatus } from "./amapGateway.js";
 import {
   BadgeCheck,
   BatteryCharging,
@@ -389,22 +388,24 @@ function MiniMap({
       ) : null}
 
       <div className="map-actions">
-        <button className="round dark" type="button" aria-label="放大地图">
+        <button className="map-tool-button" type="button" aria-label="放大地图">
           <Search size={16} />
         </button>
-        <button className="round dark" type="button" aria-label="定位">
+        <button className="map-tool-button" type="button" aria-label="定位">
           <Crosshair size={16} />
         </button>
+        <button className="map-tool-button navigation-tool" type="button" aria-label="当前位置">
+          <Navigation size={20} />
+        </button>
+        <button
+          className={cx("map-tool-button lost-tool", lostMode && "active")}
+          type="button"
+          onClick={onToggleLost}
+          aria-label={lostMode ? "退出迷路模式" : "进入迷路模式"}
+        >
+          {lostMode ? <CheckCircle2 size={18} /> : <ShieldCheck size={18} />}
+        </button>
       </div>
-
-      <button className="locate-fab" type="button" aria-label="当前位置">
-        <Navigation size={22} />
-      </button>
-
-      <button className={cx("lost-pill", lostMode && "active")} type="button" onClick={onToggleLost}>
-        {lostMode ? <CheckCircle2 size={17} /> : <ShieldCheck size={16} />}
-        {lostMode ? "退出迷路" : "迷路？"}
-      </button>
 
       {lostMode && connectedStation ? (
         <div className="map-chip bluetooth">
@@ -539,10 +540,6 @@ function MapScreen({
           </button>
         ))}
       </div>
-      <div className="map-provider-chip">
-        {getAmapStatus() === "ready" ? "高德已启用" : "高德预留 · 当前使用开源导航"}
-      </div>
-
       <MiniMap
         lostMode={lostMode}
         selectedPoi={selectedPoi}
@@ -1172,7 +1169,6 @@ function SplashScreen({ onEnter }) {
         <Navigation size={18} />
         进入 DOORI
       </button>
-      <small className="install-hint">手机浏览器菜单中选择“添加到主屏幕”即可安装</small>
     </section>
   );
 }
