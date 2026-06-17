@@ -1113,12 +1113,55 @@ function Metric({ icon: Icon, value, label }) {
   );
 }
 
+function SplashLogoMark() {
+  return (
+    <svg className="splash-logo-mark" viewBox="0 0 512 512" role="img" aria-label="DOORI">
+      <defs>
+        <radialGradient id="splashIconGlow" cx="54%" cy="37%" r="48%">
+          <stop offset="0%" stopColor="#ff9c24" stopOpacity="0.42" />
+          <stop offset="52%" stopColor="#ff9c24" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#ff9c24" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="splashIconBg" x1="96" y1="64" x2="420" y2="458" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#20232c" />
+          <stop offset="1" stopColor="#11141b" />
+        </linearGradient>
+        <linearGradient id="splashDoorFace" x1="214" y1="146" x2="334" y2="300" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ffa022" />
+          <stop offset="1" stopColor="#ff7817" />
+        </linearGradient>
+        <filter id="splashDoorGlow" x="-60%" y="-70%" width="220%" height="240%">
+          <feDropShadow dx="0" dy="0" stdDeviation="18" floodColor="#ff9c24" floodOpacity="0.58" />
+        </filter>
+        <filter id="splashSoftShadow" x="-35%" y="-35%" width="170%" height="170%">
+          <feDropShadow dx="0" dy="14" stdDeviation="10" floodColor="#000000" floodOpacity="0.28" />
+        </filter>
+      </defs>
+      <rect width="512" height="512" rx="118" fill="url(#splashIconBg)" />
+      <rect width="512" height="512" rx="118" fill="url(#splashIconGlow)" />
+      <g filter="url(#splashDoorGlow)">
+        <path d="M221 149c0-12 10-21 22-19l124 24c11 2 19 12 19 23v112c0 10-8 19-19 19h-24c-11 0-19-9-19-19v-82l-58-11v112c0 11-9 20-20 20h-5c-11 0-20-9-20-20V149z" fill="url(#splashDoorFace)" />
+        <path d="M324 207l62-30v112c0 10-8 19-19 19h-24c-11 0-19-9-19-19v-82z" fill="#fff2dc" />
+        <path d="M243 130l124 24-43 53-103-20v-38c0-12 10-21 22-19z" fill="#ff9c24" />
+      </g>
+      <g filter="url(#splashSoftShadow)">
+        <path d="M184 338l150-83c9-5 21-2 27 8 5 9 2 21-8 26l-105 58 93 38-135 70-56-30 112-58-81-33 3 4z" fill="#fff4df" />
+        <path d="M248 347l93 38-135 70-56-30 112-58-78-32 149-80c9-5 21-2 27 8l-176 75 64 9z" fill="#fff8ea" opacity="0.9" />
+      </g>
+      <g filter="url(#splashSoftShadow)">
+        <path d="M162 324c0 45-54 91-54 91s-54-46-54-91a54 54 0 0 1 108 0z" fill="#ff8a1f" />
+        <circle cx="108" cy="324" r="23" fill="#151820" />
+      </g>
+    </svg>
+  );
+}
+
 function SplashScreen({ onEnter }) {
   return (
     <section className="splash-screen">
       <div className="splash-dot" />
       <div className="splash-logo" aria-label="DOORI">
-        <img src="./icons/doori-icon.png" alt="DOORI" />
+        <SplashLogoMark />
       </div>
       <div className="splash-copy">
         <h1>DOORI</h1>
