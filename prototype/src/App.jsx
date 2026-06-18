@@ -954,6 +954,7 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
   const [previewName, setPreviewName] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewSignature, setPreviewSignature] = useState(null);
+  const [locationDescription, setLocationDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [selectedUpload, setSelectedUpload] = useState(null);
 
@@ -971,7 +972,7 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
         state: "审核中",
         image: previewUrl,
         signature: previewSignature,
-        location: "石牌村附近，等待审核确认精确位置",
+        location: locationDescription.trim() || "石牌村附近，等待审核确认精确位置",
       },
       ...items,
     ]);
@@ -982,6 +983,7 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
     setPreviewUrl("");
     setPreviewSignature(null);
     setPreviewName("");
+    setLocationDescription("");
     setSubmitted(false);
   }
 
@@ -1051,7 +1053,12 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
             </div>
           </section>
 
-          <input className="location-input" value="补充位置描述（可选） 如：金龙巷18号旁" readOnly />
+          <input
+            className="location-input"
+            value={locationDescription}
+            onChange={(event) => setLocationDescription(event.target.value)}
+            placeholder="补充位置描述（可选） 如：金龙巷18号旁"
+          />
           <button className="submit-button" type="button" onClick={submitUpload} disabled={submitted}>
             <CheckCircle2 size={17} />
             {submitted ? "已提交审核" : "提交入库"}
