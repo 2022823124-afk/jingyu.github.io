@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { cosineSimilarity, extractVisionEmbedding, similarityToScore } from "./visionModel";
 import {
   BadgeCheck,
   BatteryCharging,
@@ -211,6 +212,17 @@ const recognitionCandidates = [
     hint: "相似度较低，仅作为备用候选，可结合停靠站信号确认。",
   },
 ];
+
+const emptyRecognitionCandidate = {
+  id: "library-empty",
+  title: "暂无可匹配地点",
+  address: "人文地图识别图库为空",
+  distance: "等待照片收录",
+  confidence: 0,
+  hint: "请先上传带有位置描述的门牌、店招、巷口或楼道照片；照片审核收录后即可参与真实匹配。",
+  uploader: "DOORI",
+  model: "图库未建立",
+};
 
 function cx(...values) {
   return values.filter(Boolean).join(" ");
@@ -736,7 +748,7 @@ function InfoLine({ icon: Icon, label, value }) {
   );
 }
 
-function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrder, uploads }) {
+function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrder, uploads, setUploads }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [cameraError, setCameraError] = useState("");
@@ -744,6 +756,7 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
   const [capturedImage, setCapturedImage] = useState("");
   const [selectedCandidateId, setSelectedCandidateId] = useState("c1");
   const [recognitionMatches, setRecognitionMatches] = useState(recognitionCandidates);
+  const [recognitionEngine, setRecognitionEngine] = useState("等待识别");
   const scanning = scanState === "scanning";
   const result = scanState === "result";
   const selectedCandidate =
@@ -786,29 +799,78 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
   async function runRecognition(imageUrl) {
     setCapturedImage(imageUrl);
     setScanState("scanning");
-    const signature = await imageToSignature(imageUrl);
-    const libraryMatches = uploads
-      .filter((item) => item.state === "已收录" && item.signature)
-      .map((item) => {
-        const distance = distanceBetweenSignatures(signature, item.signature);
-        const confidence = Math.max(42, Math.min(96, Math.round(96 - distance / 3.2)));
-        return {
-          id: item.id,
-          title: item.title,
-          address: item.location || "石牌村照片库",
-          distance: "图库匹配",
-          confidence,
-          hint: `已匹配你上传并收录的${item.type}照片，可作为环境识别参照。`,
-          uploader: "本地照片库",
-          sourceImage: item.image,
-        };
-      })
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 3);
-    const nextMatches = libraryMatches.length ? libraryMatches : recognitionCandidates;
+    const approvedLibrary = uploads.filter((item) => item.state === "已收录" && item.image);
+    let libraryMatches = [];
+
+    if (!approvedLibrary.length) {
+      setRecognitionMatches([emptyRecognitionCandidate]);
+      setSelectedCandidateId(emptyRecognitionCandidate.id);
+      setRecognitionEngine("图库暂无已收录照片");
+      setScanState("result");
+      return;
+    }
+
+    try {
+      setRecognitionEngine("正在加载 MobileNet 视觉模型...");
+      const queryEmbedding = await extractVisionEmbedding(imageUrl);
+      const enrichedLibrary = await Promise.all(
+        approvedLibrary.map(async (item) => ({
+          ...item,
+          embedding: item.embedding || (await extractVisionEmbedding(item.image)),
+        })),
+      );
+      const newEmbeddings = enrichedLibrary.filter((item) => !uploads.find((saved) => saved.id === item.id)?.embedding);
+      if (newEmbeddings.length) {
+        const embeddingMap = new Map(newEmbeddings.map((item) => [item.id, item.embedding]));
+        setUploads((items) =>
+          items.map((item) => (embeddingMap.has(item.id) ? { ...item, embedding: embeddingMap.get(item.id) } : item)),
+        );
+      }
+      libraryMatches = enrichedLibrary
+        .map((item) => {
+          const similarity = cosineSimilarity(queryEmbedding, item.embedding);
+          return {
+            id: item.id,
+            title: item.title,
+            address: item.location || "石牌村照片库",
+            distance: "图库匹配",
+            confidence: similarityToScore(similarity),
+            similarity,
+            hint: `MobileNet 已将现场画面与已收录的${item.type}照片进行视觉特征比对。`,
+            uploader: "本地照片库",
+            sourceImage: item.image,
+            model: "MobileNet",
+          };
+        })
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, 3);
+      setRecognitionEngine("MobileNet · 本地图库匹配");
+    } catch {
+      const signature = await imageToSignature(imageUrl);
+      libraryMatches = approvedLibrary
+        .filter((item) => item.signature)
+        .map((item) => {
+          const distance = distanceBetweenSignatures(signature, item.signature);
+          return {
+            id: item.id,
+            title: item.title,
+            address: item.location || "石牌村照片库",
+            distance: "图库匹配",
+            confidence: Math.max(20, Math.min(75, Math.round(75 - distance / 4))),
+            hint: `视觉模型暂时无法加载，当前使用轻量图片特征与${item.type}照片进行比对。`,
+            uploader: "本地照片库",
+            sourceImage: item.image,
+            model: "轻量降级模式",
+          };
+        })
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 3);
+      setRecognitionEngine("轻量降级模式 · 可稍后联网重试");
+    }
+    const nextMatches = libraryMatches.length ? libraryMatches : [emptyRecognitionCandidate];
     setRecognitionMatches(nextMatches);
     setSelectedCandidateId(nextMatches[0]?.id || "c1");
-    window.setTimeout(() => setScanState("result"), 650);
+    setScanState("result");
   }
 
   function captureFrame() {
@@ -858,14 +920,14 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
         <div className="scan-corner tr" />
         <div className="scan-corner bl" />
         <div className="scan-corner br" />
-        {scanning ? <div className="scan-toast">正在识别环境...</div> : null}
+        {scanning ? <div className="scan-toast">{recognitionEngine}</div> : null}
         {result ? (
           <div className="recognition-card">
             <BadgeCheck size={25} />
             <div>
               <strong>{selectedCandidate.title}</strong>
               <span>{selectedCandidate.address} · {selectedCandidate.distance} · {selectedCandidate.uploader || "骑手_阿明"} 上传</span>
-              <small>{selectedCandidate.confidence}%可信度 · {selectedCandidate.confidence >= 80 ? "可定位" : "建议复核"}</small>
+              <small>{selectedCandidate.confidence}%视觉匹配度 · {selectedCandidate.confidence >= 80 ? "可定位" : "建议复核"}</small>
             </div>
             <strong className="confidence">{selectedCandidate.confidence}%</strong>
           </div>
@@ -896,6 +958,11 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
 
       {cameraError ? <div className="camera-error">{cameraError}</div> : null}
 
+      <div className="recognition-engine">
+        <Sparkles size={14} />
+        <span>{recognitionEngine}</span>
+      </div>
+
       {result ? (
         <section className="panel result-panel">
           <div className="candidate-tabs">
@@ -917,13 +984,14 @@ function ScanScreen({ scanState, setScanState, setActive, setLostMode, onScanOrd
             <button
               className="primary"
               type="button"
+              disabled={selectedCandidate.id === emptyRecognitionCandidate.id}
               onClick={() => {
                 setLostMode(true);
                 setActive("map");
               }}
             >
               <Navigation size={16} />
-              带我过去
+              {selectedCandidate.id === emptyRecognitionCandidate.id ? "等待图库照片" : "带我过去"}
             </button>
             <button className="secondary" type="button" onClick={() => setActive("upload")}>
               <ImagePlus size={16} />
@@ -954,6 +1022,8 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
   const [previewName, setPreviewName] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewSignature, setPreviewSignature] = useState(null);
+  const [previewEmbedding, setPreviewEmbedding] = useState(null);
+  const [modelStatus, setModelStatus] = useState("");
   const [locationDescription, setLocationDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [selectedUpload, setSelectedUpload] = useState(null);
@@ -972,6 +1042,7 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
         state: "审核中",
         image: previewUrl,
         signature: previewSignature,
+        embedding: previewEmbedding,
         location: locationDescription.trim() || "石牌村附近，等待审核确认精确位置",
       },
       ...items,
@@ -982,6 +1053,8 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
   function resetPhoto() {
     setPreviewUrl("");
     setPreviewSignature(null);
+    setPreviewEmbedding(null);
+    setModelStatus("");
     setPreviewName("");
     setLocationDescription("");
     setSubmitted(false);
@@ -994,7 +1067,13 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
     reader.onload = async () => {
       const imageData = String(reader.result);
       setPreviewUrl(imageData);
-      setPreviewSignature(await imageToSignature(imageData));
+      setModelStatus("正在提取 MobileNet 图片特征...");
+      const signaturePromise = imageToSignature(imageData);
+      const embeddingPromise = extractVisionEmbedding(imageData).catch(() => null);
+      setPreviewSignature(await signaturePromise);
+      const embedding = await embeddingPromise;
+      setPreviewEmbedding(embedding);
+      setModelStatus(embedding ? "MobileNet 特征已生成" : "模型暂不可用，将使用轻量特征保存");
       setPreviewName(file.name.replace(/\.[^.]+$/, ""));
       setSubmitted(false);
     };
@@ -1035,6 +1114,12 @@ function UploadScreen({ uploads, setUploads, selectedUploadType, setSelectedUplo
 
       {previewUrl ? (
         <>
+          {modelStatus ? (
+            <div className={cx("model-status", previewEmbedding && "ready")}>
+              <Sparkles size={14} />
+              <span>{modelStatus}</span>
+            </div>
+          ) : null}
           <section className="type-grid" aria-label="照片类型">
             <h2>这张照片是什么类型？</h2>
             <div>
@@ -1463,6 +1548,7 @@ export function App() {
             setLostMode={setLostMode}
             onScanOrder={scanOrderAddress}
             uploads={uploads}
+            setUploads={setUploads}
           />
         ) : null}
         {active === "upload" ? (

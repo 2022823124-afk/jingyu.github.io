@@ -1455,6 +1455,31 @@ p {
   line-height: 1.45;
 }
 
+.recognition-engine,
+.model-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  margin: -4px 0 12px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 116, 23, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 116, 23, 0.08);
+  color: #ffad73;
+  font-size: 11px;
+}
+
+.model-status {
+  margin: 0 0 12px;
+}
+
+.model-status.ready {
+  border-color: rgba(35, 243, 139, 0.24);
+  background: rgba(35, 243, 139, 0.08);
+  color: #35e779;
+}
+
 .result-panel {
   padding: 14px;
   margin-bottom: 14px;
