@@ -1186,6 +1186,13 @@ function StatsCard({ uploads }) {
 }
 
 function UploadList({ uploads, onOpen, onDelete }) {
+  function confirmDelete(item) {
+    const message = item.state === "已收录"
+      ? "删除后，这张照片将从人文地图和环境识别图库中移除。确定删除吗？"
+      : "确定删除这张审核中的照片吗？";
+    if (window.confirm(message)) onDelete(item);
+  }
+
   return (
     <section className="recent">
       <div className="section-head">
@@ -1202,11 +1209,14 @@ function UploadList({ uploads, onOpen, onDelete }) {
             </div>
             <em className={item.state === "审核中" ? "pending" : "ok"}>{item.state}</em>
           </button>
-          {item.state === "审核中" ? (
-            <button className="delete-upload" type="button" onClick={() => onDelete(item)}>
+          <button
+            className="delete-upload"
+            type="button"
+            onClick={() => confirmDelete(item)}
+            aria-label={`删除${item.title}`}
+          >
               删除
-            </button>
-          ) : null}
+          </button>
         </div>
       )) : (
         <div className="empty-library">
@@ -1220,6 +1230,13 @@ function UploadList({ uploads, onOpen, onDelete }) {
 }
 
 function UploadDetailModal({ item, onClose, onDelete }) {
+  function confirmDelete() {
+    const message = item.state === "已收录"
+      ? "删除后，这张照片将从人文地图和环境识别图库中移除。确定删除吗？"
+      : "确定删除这张审核中的照片吗？";
+    if (window.confirm(message)) onDelete(item);
+  }
+
   return (
     <div className="upload-modal" role="dialog" aria-modal="true" aria-label="照片详情">
       <div className="upload-modal-card">
@@ -1231,11 +1248,9 @@ function UploadDetailModal({ item, onClose, onDelete }) {
           <strong>{item.title}</strong>
           <span>{item.type} · {item.state}</span>
           <p>{item.location || "等待审核确认位置"}</p>
-          {item.state === "审核中" ? (
-            <button className="delete-detail-button" type="button" onClick={() => onDelete(item)}>
-              删除这张审核中的照片
-            </button>
-          ) : null}
+          <button className="delete-detail-button" type="button" onClick={confirmDelete}>
+            {item.state === "已收录" ? "从图库中删除" : "删除这张审核中的照片"}
+          </button>
         </div>
       </div>
     </div>
