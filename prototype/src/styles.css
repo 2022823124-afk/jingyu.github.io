@@ -2218,6 +2218,70 @@ p {
   font-size: 12px;
 }
 
+.theme-settings {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: #181818;
+}
+
+.theme-settings-copy {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.theme-settings-copy > svg {
+  color: #ff7417;
+}
+
+.theme-settings h2,
+.theme-settings span {
+  margin: 0;
+}
+
+.theme-settings h2 {
+  color: #f7f2ea;
+  font-size: 14px;
+}
+
+.theme-settings span {
+  display: block;
+  margin-top: 3px;
+  color: #858883;
+  font-size: 11px;
+}
+
+.theme-segment {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #0f1010;
+}
+
+.theme-segment button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  border-radius: 9px;
+  background: transparent;
+  color: #858883;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.theme-segment button.active {
+  background: #ff7417;
+  color: #fff;
+}
+
 .settings-list {
   display: grid;
   margin-top: 24px;
@@ -2469,5 +2533,202 @@ p {
 
   .bottom-nav {
     bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  background: #e9e5df;
+}
+
+.app-shell[data-theme="light"] {
+  color: #202322;
+  background: #e9e5df;
+}
+
+[data-theme="light"] .phone {
+  background: #f7f3ec;
+  color: #202322;
+}
+
+[data-theme="light"] .status-icons {
+  background:
+    linear-gradient(90deg, #191b1a 0 8%, transparent 8% 15%, #191b1a 15% 24%, transparent 24% 31%, #191b1a 31% 42%, transparent 42% 62%, #191b1a 62% 100%);
+}
+
+[data-theme="light"] .app-header h1,
+[data-theme="light"] .panel h2,
+[data-theme="light"] .recent h2,
+[data-theme="light"] .station-list h2,
+[data-theme="light"] .type-grid h2,
+[data-theme="light"] .stats-card h2,
+[data-theme="light"] .weekly-card h2,
+[data-theme="light"] .profile-card h2,
+[data-theme="light"] .station-top h3,
+[data-theme="light"] .upload-row strong,
+[data-theme="light"] .recent-row strong,
+[data-theme="light"] .theme-settings h2,
+[data-theme="light"] .settings-list button span {
+  color: #202322;
+}
+
+[data-theme="light"] .app-header span,
+[data-theme="light"] .eyebrow,
+[data-theme="light"] .panel p,
+[data-theme="light"] .panel-title p,
+[data-theme="light"] .station-card p,
+[data-theme="light"] .progress-card p,
+[data-theme="light"] .progress-card span,
+[data-theme="light"] .profile-card p,
+[data-theme="light"] .profile-stats span,
+[data-theme="light"] .stats-grid span,
+[data-theme="light"] .upload-row small,
+[data-theme="light"] .recent-row small,
+[data-theme="light"] .type-grid small,
+[data-theme="light"] .empty-library span,
+[data-theme="light"] .theme-settings span {
+  color: #737873;
+}
+
+[data-theme="light"] .panel,
+[data-theme="light"] .stats-card,
+[data-theme="light"] .station-card,
+[data-theme="light"] .profile-card,
+[data-theme="light"] .progress-card,
+[data-theme="light"] .weekly-card,
+[data-theme="light"] .settings-list,
+[data-theme="light"] .station-hero,
+[data-theme="light"] .theme-settings {
+  background: #fffdf9;
+  border-color: rgba(50, 53, 49, 0.12);
+  box-shadow: 0 5px 16px rgba(62, 53, 42, 0.06);
+}
+
+[data-theme="light"] .near-list button,
+[data-theme="light"] .recent-row,
+[data-theme="light"] .upload-row,
+[data-theme="light"] .compact-nearest,
+[data-theme="light"] .empty-library {
+  background: #f0ece5;
+  border-color: rgba(50, 53, 49, 0.08);
+}
+
+[data-theme="light"] .upload-row:active,
+[data-theme="light"] .settings-list button:active {
+  background: #e9e3da;
+}
+
+[data-theme="light"] .round.dark,
+[data-theme="light"] .secondary,
+[data-theme="light"] .secondary-link,
+[data-theme="light"] .end-button,
+[data-theme="light"] .file-button,
+[data-theme="light"] .candidate-tabs button {
+  background: #ebe6de;
+  border-color: rgba(50, 53, 49, 0.12);
+  color: #343836;
+}
+
+[data-theme="light"] .type-grid button {
+  background: #fffdf9;
+  border-color: rgba(50, 53, 49, 0.12);
+}
+
+[data-theme="light"] .type-grid button.selected {
+  background: #fff0e4;
+  border-color: #ff7417;
+}
+
+[data-theme="light"] .type-grid strong,
+[data-theme="light"] .location-input,
+[data-theme="light"] .upload-modal-copy strong {
+  color: #202322;
+}
+
+[data-theme="light"] .location-input {
+  background: #fffdf9;
+  border-color: rgba(50, 53, 49, 0.16);
+}
+
+[data-theme="light"] .location-input::placeholder {
+  color: #8c918d;
+}
+
+[data-theme="light"] .profile-stats div,
+[data-theme="light"] .badge-row div {
+  background: #fffdf9;
+  border-color: rgba(50, 53, 49, 0.12);
+}
+
+[data-theme="light"] .badge-row .earned,
+[data-theme="light"] .station-card.active {
+  background: #fff1e6;
+  border-color: rgba(255, 116, 23, 0.35);
+}
+
+[data-theme="light"] .progress-track,
+[data-theme="light"] .theme-segment {
+  background: #e8e2d9;
+}
+
+[data-theme="light"] .theme-segment button {
+  color: #666b67;
+}
+
+[data-theme="light"] .theme-segment button.active {
+  background: #ff7417;
+  color: #fff;
+}
+
+[data-theme="light"] .settings-list button {
+  border-color: rgba(50, 53, 49, 0.1);
+}
+
+[data-theme="light"] .settings-list button > svg:first-child,
+[data-theme="light"] .settings-list button svg:last-child {
+  color: #6f7571;
+}
+
+[data-theme="light"] .bottom-nav {
+  background: rgba(255, 253, 249, 0.96);
+  border-color: rgba(50, 53, 49, 0.14);
+  box-shadow: 0 8px 24px rgba(49, 43, 35, 0.12);
+}
+
+[data-theme="light"] .nav-item {
+  color: #7b807c;
+}
+
+[data-theme="light"] .nav-item.active {
+  color: #fff;
+}
+
+[data-theme="light"] .warning-panel {
+  background: #fff9de;
+  border-color: rgba(174, 143, 0, 0.28);
+}
+
+[data-theme="light"] .map-floating-panel .panel-title strong,
+[data-theme="light"] .map-floating-panel .near-list strong {
+  color: #202322;
+}
+
+[data-theme="light"] .map-result-strip button:not(.active) {
+  background: rgba(255, 253, 249, 0.92);
+  color: #202322;
+}
+
+[data-theme="light"] .upload-modal-card {
+  background: #fffdf9;
+}
+
+[data-theme="light"] .upload-modal-copy span,
+[data-theme="light"] .upload-modal-copy p {
+  color: #737873;
+}
+
+@media (max-width: 640px) {
+  .app-shell[data-theme="light"] {
+    background: #f7f3ec;
   }
 }

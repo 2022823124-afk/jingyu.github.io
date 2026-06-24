@@ -21,6 +21,7 @@ import {
   LogOut,
   Map,
   MapPin,
+  Moon,
   Navigation,
   Radio,
   RefreshCw,
@@ -29,6 +30,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  Sun,
   TrendingUp,
   Upload,
   Wifi,
@@ -1308,7 +1310,7 @@ function StationScreen({ connectedStation, setConnectedStation }) {
   );
 }
 
-function ProfileScreen({ uploads }) {
+function ProfileScreen({ uploads, theme, setTheme }) {
   const [profileNotice, setProfileNotice] = useState("");
   const profileActions = [
     { label: "消息通知", icon: Bell, badge: "3", message: "已打开消息通知" },
@@ -1369,6 +1371,36 @@ function ProfileScreen({ uploads }) {
               <em>{day}</em>
             </span>
           ))}
+        </div>
+      </section>
+
+      <section className="theme-settings" aria-labelledby="theme-title">
+        <div className="theme-settings-copy">
+          {theme === "dark" ? <Moon size={20} /> : <Sun size={20} />}
+          <div>
+            <h2 id="theme-title">界面外观</h2>
+            <span>选择适合当前环境的显示模式</span>
+          </div>
+        </div>
+        <div className="theme-segment" role="group" aria-label="界面主题">
+          <button
+            className={cx(theme === "dark" && "active")}
+            type="button"
+            onClick={() => setTheme("dark")}
+            aria-pressed={theme === "dark"}
+          >
+            <Moon size={16} />
+            深色
+          </button>
+          <button
+            className={cx(theme === "light" && "active")}
+            type="button"
+            onClick={() => setTheme("light")}
+            aria-pressed={theme === "light"}
+          >
+            <Sun size={16} />
+            暖白
+          </button>
         </div>
       </section>
 
@@ -1485,6 +1517,22 @@ export function App() {
   const [selectedUploadType, setSelectedUploadType] = useState("door");
   const [toast, setToast] = useState("");
   const [orderPreview, setOrderPreview] = useState(null);
+  const [theme, setTheme] = useState(() => {
+    try {
+      return window.localStorage.getItem("doori-theme") === "light" ? "light" : "dark";
+    } catch {
+      return "dark";
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      window.localStorage.setItem("doori-theme", theme);
+    } catch {
+      // Theme still works for the current session when storage is unavailable.
+    }
+  }, [theme]);
 
   useEffect(() => {
     try {
@@ -1526,7 +1574,7 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" data-theme={theme}>
       <div className="phone">
         <div className="dynamic-island" />
         <div className="status-icons" />
@@ -1577,7 +1625,9 @@ export function App() {
         {active === "station" ? (
           <StationScreen connectedStation={connectedStation} setConnectedStation={setConnectedStation} />
         ) : null}
-        {active === "profile" ? <ProfileScreen uploads={uploads} /> : null}
+        {active === "profile" ? (
+          <ProfileScreen uploads={uploads} theme={theme} setTheme={setTheme} />
+        ) : null}
 
         <BottomNav active={active} setActive={setActive} />
         {showSplash ? <SplashScreen onEnter={() => setShowSplash(false)} /> : null}
